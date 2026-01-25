@@ -1,0 +1,73 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww26060\viewh22840\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Fix f\'fcr libpng.a Linking-Fehler auf RockPi / ARMv7\
+\
+1. Problem\
+\
+Beim Build des Projekts auf einem RockPi (ARMv7) trat folgender Fehler auf:\
+\
+/usr/bin/ld: libpng.a(png.o): relocation R_ARM_THM_MOVW_ABS_NC against `a local symbol' can not be used when making a shared object; recompile with -fPIC\
+libpng.a: error adding symbols: Bad value\
+collect2: error: ld returned 1 exit status\
+\
+Ursache:\
+- Das Projekt verlinkte hart statische Bibliotheken (.a), z. B. libpng.a, libjpeg.a, libz.a.\
+- Diese .a-Dateien waren nicht mit -fPIC gebaut, daher konnte der ARM-Linker sie nicht in Shared Objects / PIE-Binaries einf\'fcgen.\
+- Systemweite Shared Libraries (.so) waren korrekt installiert, wurden aber nicht benutzt, weil die .a-Versionen Vorrang hatten.\
+\
+2. Notwendige Installationen\
+\
+sudo apt update\
+sudo apt install libpng-dev libjpeg-dev zlib1g-dev\
+\
+3. Vorgehensweise zur L\'f6sung\
+\
+Schritt 1: Dynamisches Verlinken erzwingen\
+Im Makefile wurde die XLIBS-Zeile f\'fcr ARMv7 ge\'e4ndert:\
+\
+Vorher:\
+XLIBS = $(EXTLIB)libpng.a \\\
+        $(EXTLIB)libz.a \\\
+        $(EXTLIB)libjpeg.a \\\
+        $(EXTLIB)libxcb.so $(EXTLIB)libXdmcp.so $(EXTLIB)libXau.so \\\
+        -L$(EXTLIB) -lXext -lX11\
+\
+Nachher (korrekt):\
+XLIBS = $(EXTLIB)libxcb.so $(EXTLIB)libXdmcp.so $(EXTLIB)libXau.so \\\
+        -L$(EXTLIB) -lXext -lX11 -lpng -lz -ljpeg\
+\
+Schritt 2: Alte .a-Dateien aus dem Projekt vor\'fcbergehend deaktivieren\
+\
+find . -name "libpng.a" -exec mv \{\} \{\}.bak \\;\
+find . -name "libjpeg.a" -exec mv \{\} \{\}.bak \\;\
+find . -name "libz.a" -exec mv \{\} \{\}.bak \\;\
+\
+Schritt 3: Clean Build\
+\
+make clean\
+make\
+\
+Schritt 4: Kontrolle der dynamischen Libraries\
+\
+ldd ../out-armv7hf/waterfall\
+\
+Erwartet:\
+libpng16.so.16 => /usr/lib/arm-linux-gnueabihf/libpng16.so.16\
+libjpeg.so.8   => /usr/lib/arm-linux-gnueabihf/libjpeg.so.8\
+libz.so.1      => /usr/lib/arm-linux-gnueabihf/libz.so.1\
+\
+5. Zusammenfassung\
+\
+- Das Problem lag an nicht-PIC-f\'e4higen statischen Bibliotheken (.a) auf ARM.\
+- L\'f6sung: Alle .a-Referenzen entfernen \uc0\u8594  Shared Libraries verwenden.\
+- Ergebnis: Build l\'e4uft sauber auf RockPi / ARMv7, kein R_ARM_THM_MOVW_ABS_NC-Fehler mehr.\
+\
+Optional: Aufr\'e4umen\
+- Die .bak Dateien k\'f6nnen gel\'f6scht werden, wenn sie nicht mehr ben\'f6tigt werden.\
+- Andere .a-Bibliotheken (z. B. zlib, JPEG) k\'f6nnen nach dem gleichen Prinzip behandelt werden, falls n\'f6tig.\
+"""}
