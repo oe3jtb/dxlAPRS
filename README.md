@@ -8,7 +8,9 @@ Das System wurde vom österreichischen Funkamateur Chris (OE5DXL) entwickelt. Di
 
 • Vernetzung: Die Tools kommunizieren untereinander über das Netzwerkprotokoll UDP (bzw. das amateurfunkspezifische AXUDP). Das macht das System extrem flexibel und universell einsetzbar.
 
-
+Referenzen und Tipps:
+https://dxlwiki.dl1nux.de/index.php?title=Hauptseite
+https://sites.google.com/view/oe3jtb/
 
 --------------------------------------------------------------------------------
 
